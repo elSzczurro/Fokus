@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fokus – zadania i pomodoro</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef2f7;--sf:#fff;--ink:#14213d;--mut:#5b6784;--line:#d7deea;--ac:#2f5bea;--acink:#fff;--ok:#1f8a5b;--br:#c2410c;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101626;--sf:#18203a;--ink:#e8edf9;--mut:#9aa6c4;--line:#2a3558;--ac:#6f8dff;--acink:#0b1020;--ok:#4cc38a;--br:#ff9a5c;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#101626;--sf:#18203a;--ink:#e8edf9;--mut:#9aa6c4;--line:#2a3558;--ac:#6f8dff;--acink:#0b1020;--ok:#4cc38a;--br:#ff9a5c;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.45}
+main{max-width:960px;margin:0 auto;padding:24px 16px 48px;display:grid;gap:20px;grid-template-columns:1fr 1.1fr}
+@media(max-width:760px){main{grid-template-columns:1fr}}
+h1{font-size:1.5rem;font-weight:800;margin:0}
+header{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:12px}
+header p{margin:2px 0 0;color:var(--mut)}
+section{background:var(--sf);border:1px solid var(--line);border-radius:18px;padding:22px}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:10px;padding:8px 14px}
+button:hover{border-color:var(--ac)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+.pri{background:var(--ac);color:var(--acink);border-color:var(--ac);font-weight:600}
+.tabs{display:flex;gap:6px;margin-bottom:18px}
+.tabs button{flex:1;padding:8px 4px;font-size:.92rem}
+.tabs button[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.ring{position:relative;width:min(300px,100%);aspect-ratio:1;margin:0 auto 14px}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:10}
+.ring .bg{stroke:var(--line)}
+.ring .fg{stroke:var(--ac);stroke-linecap:round;transition:stroke-dashoffset .4s linear}
+.ring.brk .fg{stroke:var(--ok)}
+.time{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.time b{font-size:clamp(3rem,14vw,4.6rem);font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1}
+.time span{color:var(--mut);font-size:.95rem;margin-top:8px;max-width:70%;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ctl{display:flex;gap:10px;justify-content:center}
+.ctl .pri{min-width:120px;padding:10px 18px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:20px;text-align:center}
+.stats div{border-top:2px solid var(--line);padding-top:8px}
+.stats b{display:block;font-size:1.5rem;font-weight:800}
+.stats small{color:var(--mut)}
+form{display:flex;gap:8px;margin-bottom:14px}
+input[type=text]{flex:1;min-width:0;font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+ul{list-style:none;margin:0;padding:0}
+li{display:flex;align-items:center;gap:10px;padding:10px 8px;border-bottom:1px solid var(--line);border-left:3px solid transparent}
+li.act{border-left-color:var(--ac);background:color-mix(in srgb,var(--ac) 8%,transparent)}
+li input{width:20px;height:20px;accent-color:var(--ok)}
+li .t{flex:1;min-width:0;text-align:left;border:0;padding:2px;word-break:break-word}
+li.done .t{text-decoration:line-through;color:var(--mut)}
+li .n{color:var(--br);font-size:.85rem;white-space:nowrap}
+li .x{border:0;color:var(--mut);padding:4px 8px}
+.empty{color:var(--mut);padding:18px 4px}
+.foot{display:flex;justify-content:space-between;align-items:center;margin-top:12px;color:var(--mut);font-size:.9rem}
+.foot button{border:0;color:var(--mut);padding:4px 6px;text-decoration:underline}
+@media (prefers-reduced-motion:reduce){.ring .fg{transition:none}}
+</style>
+</head>
+<body>
+<main>
+<header>
+<div><h1>Fokus</h1><p>Wybierz zadanie, włącz timer, pracuj bez rozpraszaczy.</p></div>
+<button id="theme" aria-label="Zmień motyw">Motyw</button>
+</header>
+
+<section aria-label="Timer">
+<div class="tabs" role="group" aria-label="Tryb">
+<button data-m="work" aria-pressed="true">Praca 25</button>
+<button data-m="short" aria-pressed="false">Przerwa 5</button>
+<button data-m="long" aria-pressed="false">Długa 15</button>
+</div>
+<div class="ring" id="ring">
+<svg viewBox="0 0 120 120" aria-hidden="true"><circle class="bg" cx="60" cy="60" r="54"/><circle class="fg" id="fg" cx="60" cy="60" r="54" stroke-dasharray="339.29" stroke-dashoffset="0"/></svg>
+<div class="time"><b id="clock" role="timer">25:00</b><span id="cur">Brak wybranego zadania</span></div>
+</div>
+<div class="ctl"><button class="pri" id="go">Start</button><button id="reset">Resetuj</button></div>
+<div class="stats">
+<div><b id="s1">0</b><small>pomodoro dziś</small></div>
+<div><b id="s2">0</b><small>minut skupienia</small></div>
+<div><b id="s3">0</b><small>zadań zrobionych</small></div>
+</div>
+</section>
+
+<section aria-label="Zadania">
+<form id="f"><input type="text" id="in" placeholder="Co chcesz dziś zrobić?" aria-label="Nowe zadanie" maxlength="120" autocomplete="off"><button class="pri">Dodaj</button></form>
+<ul id="list"></ul>
+<div class="foot"><span id="cnt"></span><button id="clr">Usuń ukończone</button></div>
+</section>
+</main>
+
+<script>
+(function(){
+var DUR={work:25*60,short:5*60,long:15*60};
+var S={tasks:[],active:null,log:{},cycle:0};
+try{var raw=localStorage.getItem("fokus1");if(raw)S=Object.assign(S,JSON.parse(raw))}catch(e){}
+function save(){try{localStorage.setItem("fokus1",JSON.stringify(S))}catch(e){}}
+var mode="work",left=DUR.work,end=0,tick=null;
+var $=function(i){return document.getElementById(i)};
+var today=function(){return new Date().toISOString().slice(0,10)};
+function esc(s){return s.replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function fmt(s){var m=Math.floor(s/60),r=s%60;return(m<10?"0":"")+m+":"+(r<10?"0":"")+r}
+
+function beep(){try{var a=new (window.AudioContext||window.webkitAudioContext)(),t=0;[660,880,660].forEach(function(f){var o=a.createOscillator(),g=a.createGain();o.frequency.value=f;o.connect(g);g.connect(a.destination);g.gain.setValueAtTime(.15,a.currentTime+t);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+t+.3);o.start(a.currentTime+t);o.stop(a.currentTime+t+.3);t+=.35})}catch(e){}}
+
+function drawTimer(){
+$("clock").textContent=fmt(left);
+$("fg").style.strokeDashoffset=339.29*(1-left/DUR[mode]);
+$("ring").className="ring"+(mode==="work"?"":" brk");
+$("go").textContent=tick?"Pauza":"Start";
+var t=S.tasks.filter(function(x){return x.id===S.active})[0];
+$("cur").textContent=mode!=="work"?"Czas na odpoczynek":t?t.text:"Brak wybranego zadania";
+document.title=(tick?fmt(left)+" – ":"")+"Fokus";
+document.querySelectorAll(".tabs button").forEach(function(b){b.setAttribute("aria-pressed",b.dataset.m===mode)});
+}
+function setMode(m){stop();mode=m;left=DUR[m];drawTimer()}
+function stop(){if(tick){clearInterval(tick);tick=null}}
+function finish(){
+stop();beep();
+if(mode==="work"){
+var d=today();S.log[d]=S.log[d]||{p:0,m:0};S.log[d].p++;S.log[d].m+=DUR.work/60;
+var t=S.tasks.filter(function(x){return x.id===S.active})[0];if(t)t.pom=(t.pom||0)+1;
+S.cycle++;save();render();
+setMode(S.cycle%4===0?"long":"short");
+}else{setMode("work")}
+}
+function run(){
+end=Date.now()+left*1000;
+tick=setInterval(function(){left=Math.max(0,Math.round((end-Date.now())/1000));drawTimer();if(left<=0)finish()},250);
+drawTimer();
+}
+$("go").onclick=function(){if(tick){stop();drawTimer()}else run()};
+$("reset").onclick=function(){stop();left=DUR[mode];drawTimer()};
+document.querySelectorAll(".tabs button").forEach(function(b){b.onclick=function(){setMode(b.dataset.m)}});
+
+function render(){
+var l=$("list");l.innerHTML="";
+if(!S.tasks.length)l.innerHTML='<li class="empty" style="border:0">Lista jest pusta. Dodaj pierwsze zadanie powyżej.</li>';
+S.tasks.forEach(function(t){
+var li=document.createElement("li");li.className=(t.done?"done ":"")+(t.id===S.active?"act":"");
+li.innerHTML='<input type="checkbox" aria-label="Ukończ"'+(t.done?" checked":"")+'><button class="t" title="Wybierz do pracy">'+esc(t.text)+'</button>'+(t.pom?'<span class="n">'+t.pom+'×</span>':"")+'<button class="x" aria-label="Usuń">✕</button>';
+li.querySelector("input").onchange=function(){t.done=!t.done;if(t.done&&S.active===t.id)S.active=null;save();render();drawTimer()};
+li.querySelector(".t").onclick=function(){if(!t.done){S.active=t.id;save();render();drawTimer()}};
+li.querySelector(".x").onclick=function(){S.tasks=S.tasks.filter(function(x){return x!==t});if(S.active===t.id)S.active=null;save();render();drawTimer()};
+l.appendChild(li);
+});
+var open=S.tasks.filter(function(x){return!x.done}).length;
+$("cnt").textContent="Do zrobienia: "+open;
+var g=S.log[today()]||{p:0,m:0};
+$("s1").textContent=g.p;$("s2").textContent=g.m;
+$("s3").textContent=S.tasks.filter(function(x){return x.done}).length;
+}
+$("f").onsubmit=function(e){e.preventDefault();var v=$("in").value.trim();if(!v)return;
+var t={id:Date.now(),text:v,done:false,pom:0};S.tasks.unshift(t);if(!S.active)S.active=t.id;
+$("in").value="";save();render();drawTimer()};
+$("clr").onclick=function(){S.tasks=S.tasks.filter(function(x){return!x.done});save();render()};
+
+$("theme").onclick=function(){var r=document.documentElement,dark=(r.dataset.theme||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light"))==="dark";r.dataset.theme=dark?"light":"dark"};
+document.addEventListener("keydown",function(e){if(e.code==="Space"&&e.target.tagName!=="INPUT"&&e.target.tagName!=="BUTTON"){e.preventDefault();$("go").click()}});
+render();drawTimer();
+})();
+</script>
+</body>
+</html>
